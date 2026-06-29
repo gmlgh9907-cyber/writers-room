@@ -967,12 +967,21 @@ async function changeMySkin(skinName) {
   showToast('스킨을 적용했습니다!', 'success');
 }
 
-function startWork() {
-  if (myStatus === 'none' || myStatus === 'off') { timerStart = Date.now(); timerPaused = 0; autoAttendanceMarked = false; }
-  else if (myStatus === 'resting') { timerStart = Date.now(); }
+async function startWork() {
+  if (myStatus === 'none' || myStatus === 'off') {
+    timerStart = Date.now();
+    autoAttendanceMarked = false;
+    // 오늘 이미 기록된 시간이 있으면 불러와서 누적
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: existing } = await sb.from('work_logs').select('work_minutes').eq('nickname', currentUser.nickname).eq('log_date', today).maybeSingle();
+      timerPaused = existing ? (existing.work_minutes * 60000) : 0;
+    } catch(e) { timerPaused = 0; }
+  } else if (myStatus === 'resting') { 
+    timerStart = Date.now(); 
+  }
   startTimerInterval(); setMyStatus('writing'); saveTimerState();
-}
-function startRest() {
+}function startRest() {
   if (timerStart) timerPaused += Date.now() - timerStart;
   timerStart = null; stopTimerInterval(); setMyStatus('resting'); saveTimerState();
 }
