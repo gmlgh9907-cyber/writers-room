@@ -930,7 +930,8 @@ function setMyStatus(s) {
   document.getElementById('btn-rest').disabled = (s === 'none' || s === 'off' || s === 'resting');
   document.getElementById('btn-off').disabled  = (s === 'none' || s === 'off');
   broadcastPresence();
-  // presenceMap에서 내 데이터 직접 업데이트 후 렌더링
+  console.log('presenceMap keys:', Object.keys(presenceMap));   // ← 추가
+  console.log('currentUser.nickname:', currentUser.nickname);   // ← 추가
   const currentMs = timerPaused + (timerStart ? Date.now() - timerStart : 0);
   presenceMap[currentUser.nickname] = {
     ...presenceMap[currentUser.nickname],
@@ -938,7 +939,7 @@ function setMyStatus(s) {
     workMs:     currentMs,
     timerStart: s === 'writing' ? timerStart : null,
   };
-  renderWriters(); 
+  renderWriters();
 }
 
 async function changeMySkin(skinName) {
