@@ -947,8 +947,6 @@ function setMyStatus(s) {
   document.getElementById('btn-rest').disabled = (s === 'none' || s === 'off' || s === 'resting');
   document.getElementById('btn-off').disabled  = (s === 'none' || s === 'off');
   broadcastPresence();
-  console.log('presenceMap keys:', Object.keys(presenceMap));   // ← 추가
-  console.log('currentUser.nickname:', currentUser.nickname);   // ← 추가
   const currentMs = timerPaused + (timerStart ? Date.now() - timerStart : 0);
   presenceMap[currentUser.nickname] = {
     ...presenceMap[currentUser.nickname],
@@ -973,10 +971,8 @@ async function startWork() {
     // 오늘 이미 기록된 시간이 있으면 불러와서 누적
     try {
       const today = new Date().toISOString().slice(0, 10);
-      const { data: existing } = await sb.from('work_logs').select('work_minutes').eq('nickname', currentUser.nickname).eq('log_date', today).maybeSingle();
-      console.log('오늘 기존 기록:', existing);        
+      const { data: existing } = await sb.from('work_logs').select('work_minutes').eq('nickname', currentUser.nickname).eq('log_date', today).maybeSingle();     
       timerPaused = existing ? (existing.work_minutes * 60000) : 0;
-      console.log('timerPaused 설정값(ms):', timerPaused); 
     } catch(e) { timerPaused = 0; }
   } else if (myStatus === 'resting') { 
     timerStart = Date.now(); 
@@ -1001,7 +997,6 @@ function closeCheckout() {
 async function confirmCheckout() {
   const chars = parseInt(document.getElementById('char-input').value) || 0;
   const mins  = Math.floor(timerPaused / 60000);
-  console.log('퇴근 저장 mins:', mins, 'timerPaused:', timerPaused); 
   const today = new Date().toISOString().slice(0, 10);
   setLoading('btn-confirm-checkout', true);
   try {
