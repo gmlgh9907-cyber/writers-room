@@ -418,9 +418,12 @@ input::placeholder { color: var(--ink-muted); }
 .cal-day.today { color: var(--accent); font-weight: 600; }
 .cal-day.today::before { content: ''; position: absolute; inset: 2px; border: 1px solid var(--accent-dim); border-radius: 50%; }
 .cal-day.attended { color: var(--ink-primary); font-weight: 600; }
-.cal-day.attended::after { content: ''; position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; border-radius: 50%; background: var(--status-write); box-shadow: 0 0 6px rgba(109,191,139,0.6); }
+.cal-day.attended::after { content: ''; position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--status-write); box-shadow: 0 0 5px rgba(109,191,139,0.5); bottom: 1px; }
 .cal-day.today.attended { background: rgba(109,191,139,0.15); color: var(--status-write); }
 .cal-day.today.attended::before { border-color: var(--status-write); }
+.cal-day.absent { color: var(--ink-secondary); }
+.cal-day.absent::after { content: '✕'; position: absolute; bottom: 1px; left: 50%; transform: translateX(-50%); font-size: 0.45rem; color: var(--danger); line-height: 1; }
+.cal-day.today.absent { background: rgba(224,92,106,0.08); }
 
 /* Modals */
 .overlay { position: fixed; inset: 0; background: rgba(10,10,16,0.85); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
@@ -673,6 +676,17 @@ input::placeholder { color: var(--ink-muted); }
   </div>
 </div>
 
+<!-- 달력 날짜 클릭 모달 -->
+<div class="overlay" id="cal-day-modal">
+  <div class="modal" style="max-width:480px;max-height:80vh;display:flex;flex-direction:column;">
+    <div class="modal-title" id="cal-day-modal-title">날짜 기록</div>
+    <div id="cal-day-modal-body" style="overflow-y:auto;flex:1;margin-top:12px;padding-right:4px;"></div>
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="btn btn-primary" onclick="closeCalendarDayModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast-container"></div>
 <div id="poke-notifications"></div>
 </div>
@@ -704,7 +718,9 @@ let presenceMap     = {};
 let calYear  = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 let allLogDates = new Set();
+let allGoalLogDates = new Set();
 let selectedEmoji   = '';
+let autoAttendanceMarked = false;
 let pendingAvatarDataUrl = null;
 
 // 각 목표의 로그 캐시 { goalId: [{id, log_text, created_at, nickname}] }
@@ -818,6 +834,7 @@ function doLogout() {
   localStorage.removeItem('wr_saved_password_hashed');
   clearTimerState();
   stopTimer();
+  stopWritersTimer();
   myStatus = 'none'; currentUser = null; presenceMap = {};
   goalLogsCache = {}; openLogPanels = new Set();
   document.getElementById('main-screen').style.display = 'none';
@@ -923,7 +940,7 @@ async function changeMySkin(skinName) {
 }
 
 function startWork() {
-  if (myStatus === 'none' || myStatus === 'off') { timerStart = Date.now(); timerPaused = 0; }
+  if (myStatus === 'none' || myStatus === 'off') { timerStart = Date.now(); timerPaused = 0; autoAttendanceMarked = false; }
   else if (myStatus === 'resting') { timerStart = Date.now(); }
   startTimerInterval(); setMyStatus('writing'); saveTimerState();
 }
@@ -949,8 +966,15 @@ async function confirmCheckout() {
   const today = new Date().toISOString().slice(0, 10);
   setLoading('btn-confirm-checkout', true);
   try {
-    const { error } = await sb.from('work_logs').insert({ nickname: currentUser.nickname, log_date: today, work_minutes: mins, char_count: chars });
-    if (error) throw error;
+    // 이미 오늘 임시 출석 기록이 있으면 update, 없으면 insert
+    const { data: existing } = await sb.from('work_logs').select('id').eq('nickname', currentUser.nickname).eq('log_date', today).maybeSingle();
+    if (existing) {
+      const { error } = await sb.from('work_logs').update({ work_minutes: mins, char_count: chars }).eq('id', existing.id);
+      if (error) throw error;
+    } else {
+      const { error } = await sb.from('work_logs').insert({ nickname: currentUser.nickname, log_date: today, work_minutes: mins, char_count: chars });
+      if (error) throw error;
+    }
     stopTimer(); setMyStatus('off');
     document.getElementById('checkout-overlay').classList.remove('open');
     showToast(`퇴근 기록 저장 성공!`, 'success');
@@ -1027,7 +1051,26 @@ function scheduleMidnightCheckout() {
 
 function startTimerInterval() {
   if (timerInterval) return;
-  timerInterval = setInterval(() => { updateTimerDisplay(); saveTimerState(); broadcastPresence(); }, 1000);
+  timerInterval = setInterval(async () => {
+    updateTimerDisplay();
+    saveTimerState();
+    broadcastPresence();
+    // 10분 이상 집필 시 자동 출석 처리 (work_logs에 임시 기록)
+    const totalMs = timerPaused + (timerStart ? Date.now() - timerStart : 0);
+    if (totalMs >= 10 * 60 * 1000 && !autoAttendanceMarked) {
+      autoAttendanceMarked = true;
+      const today = new Date().toISOString().slice(0, 10);
+      // 이미 오늘 기록이 없는 경우에만 임시 출석 기록
+      try {
+        const { data: existing } = await sb.from('work_logs').select('id').eq('nickname', currentUser.nickname).eq('log_date', today).maybeSingle();
+        if (!existing) {
+          await sb.from('work_logs').insert({ nickname: currentUser.nickname, log_date: today, work_minutes: 0, char_count: 0 });
+          allLogDates.add(today);
+          renderCalendar();
+        }
+      } catch(e) { /* 무시 */ }
+    }
+  }, 1000);
 }
 function stopTimerInterval()  { clearInterval(timerInterval); timerInterval = null; }
 function stopTimer() {
@@ -1049,9 +1092,37 @@ function formatMs(ms) {
   return formatMinutes(Math.floor(ms / 60000));
 }
 
+// ms → "HH:MM:SS" 형태
+function formatHms(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
 /* ═══════════════════════════════════════════════════════════
    접속자 명단 렌더링
 ═══════════════════════════════════════════════════════════ */
+let writersTimerInterval = null;
+
+function startWritersTimer() {
+  if (writersTimerInterval) return;
+  writersTimerInterval = setInterval(() => {
+    // 집필중인 작가들의 타이머만 실시간 갱신
+    document.querySelectorAll('.writer-work-timer[data-start]').forEach(el => {
+      const timerStart = parseInt(el.dataset.start);
+      const workMsBase = parseInt(el.dataset.base || '0');
+      const totalMs = workMsBase + (Date.now() - timerStart);
+      el.textContent = formatHms(totalMs);
+    });
+    // 집필중이 아닌 작가들도 (정지 상태) 표시는 이미 렌더링 시 고정값
+  }, 1000);
+}
+
+function stopWritersTimer() {
+  if (writersTimerInterval) { clearInterval(writersTimerInterval); writersTimerInterval = null; }
+}
 function renderWriters() {
   const list = document.getElementById('writers-list');
   const entries = Object.values(presenceMap);
@@ -1071,14 +1142,17 @@ function renderWriters() {
       : `<span>${escHtml(e.nickname.charAt(0))}</span>`;
     const displayMsg = e.status_msg ? escHtml(e.status_msg) : "설정된 한 줄 한마디가 없습니다.";
 
-    // 오늘 총 작업 시간 계산 (presence에서 받은 workMs 기준, 집필중이면 현재 세그먼트 추가)
-    let totalMs = e.workMs || 0;
-    if (e.status === 'writing' && e.timerStart) {
-      totalMs += Date.now() - e.timerStart;
+    // 작업 시간 표시 (시:분:초 실시간)
+    let workTimerHtml = '';
+    if (e.status !== 'none') {
+      const workMsBase = e.workMs || 0;
+      if (e.status === 'writing' && e.timerStart) {
+        const initialMs = workMsBase + (Date.now() - e.timerStart);
+        workTimerHtml = `<div style="font-family:var(--mono);font-size:0.78rem;color:var(--status-write);margin-bottom:4px;">⏱ <span class="writer-work-timer" data-start="${e.timerStart}" data-base="${workMsBase}">${formatHms(initialMs)}</span></div>`;
+      } else if (workMsBase >= 1000) {
+        workTimerHtml = `<div style="font-family:var(--mono);font-size:0.78rem;color:var(--ink-muted);margin-bottom:4px;">⏱ <span>${formatHms(workMsBase)}</span></div>`;
+      }
     }
-    const workTimeStr = (e.status === 'none')
-      ? ''
-      : (totalMs >= 60000 ? formatMs(totalMs) : '1분 미만');
 
     return `
       <div class="writer-card skin-${cardSkin} ${isMe ? 'is-me-card' : ''}">
@@ -1089,7 +1163,7 @@ function renderWriters() {
           <div class="writer-meta" style="color: var(--ink-secondary); font-size: 0.8rem; margin-bottom: 2px;">
             ${m.icon} ${m.label}
           </div>
-          ${workTimeStr ? `<div style="font-family:var(--mono);font-size:0.75rem;color:var(--status-write);margin-bottom:4px;">⏱ 오늘 ${workTimeStr}</div>` : ''}
+          ${workTimerHtml}
         </div>
         <div class="writer-status-msg" ${isMe ? 'onclick="focusCardMsgInput()"' : ''}>
           ${displayMsg}
@@ -1124,6 +1198,8 @@ function renderWriters() {
       </div>
     `;
   }).join('');
+
+  startWritersTimer();
 }
 
 function focusCardMsgInput() {
@@ -1430,7 +1506,19 @@ async function loadStats() {
   const { data, error } = await sb.from('work_logs').select('*').eq('nickname', currentUser.nickname).order('log_date', { ascending: false }).limit(60);
   if (error) { console.error('통계 로딩 실패:', error); return; }
 
-  allLogDates = new Set(data.map(r => r.log_date));
+  allLogDates = new Set(data.filter(r => r.work_minutes >= 10).map(r => r.log_date));
+
+  // 내 goal_logs가 있는 날짜도 수집 (달력 표시용)
+  try {
+    const { data: myGoalLogs } = await sb
+      .from('goal_logs')
+      .select('created_at')
+      .eq('nickname', currentUser.nickname);
+    allGoalLogDates = new Set(
+      (myGoalLogs || []).map(l => l.created_at.slice(0, 10))
+    );
+  } catch(e) { allGoalLogDates = new Set(); }
+
   renderCalendar();
 
   const now = new Date();
@@ -1476,12 +1564,95 @@ function renderCalendar() {
   for (let i = 0; i < startDow; i++) html += `<div class="cal-day"></div>`;
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isPast = dateStr < todayStr;
+    const isToday = dateStr === todayStr;
+    const attended = allLogDates.has(dateStr);
+    const hasGoalLog = allGoalLogDates.has(dateStr);
+    const clickable = attended || hasGoalLog;
+
     let cls = 'cal-day in-month';
-    if (dateStr === todayStr) cls += ' today';
-    if (allLogDates.has(dateStr)) cls += ' attended';
-    html += `<div class="${cls}">${d}</div>`;
+    if (isToday) cls += ' today';
+    if (attended) cls += ' attended';
+    else if (isPast) cls += ' absent';
+
+    html += `<div class="${cls}" style="${clickable ? 'cursor:pointer;' : ''}" ${clickable ? `onclick="openCalendarDayModal('${dateStr}')"` : ''}>${d}</div>`;
   }
   grid.innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   달력 날짜 클릭 → 해당 날 목표/작업 로그 모달
+═══════════════════════════════════════════════════════════ */
+async function openCalendarDayModal(dateStr) {
+  const modal = document.getElementById('cal-day-modal');
+  const title = document.getElementById('cal-day-modal-title');
+  const body  = document.getElementById('cal-day-modal-body');
+  const [y, m, d] = dateStr.split('-');
+  title.textContent = `${y}년 ${parseInt(m)}월 ${parseInt(d)}일 기록`;
+  body.innerHTML = `<div style="text-align:center;padding:20px;color:var(--ink-muted);">불러오는 중...</div>`;
+  modal.classList.add('open');
+
+  try {
+    // 해당 날의 work_log
+    const { data: wlog } = await sb.from('work_logs').select('*')
+      .eq('nickname', currentUser.nickname)
+      .eq('log_date', dateStr).maybeSingle();
+
+    // 해당 날의 goal_logs (내 것) — KST 기준으로 날짜 범위 설정
+    const dayStart = new Date(dateStr + 'T00:00:00+09:00').toISOString();
+    const dayEnd   = new Date(dateStr + 'T23:59:59+09:00').toISOString();
+    const { data: glogs } = await sb.from('goal_logs').select('*, daily_goals(goal_text)')
+      .eq('nickname', currentUser.nickname)
+      .gte('created_at', dayStart)
+      .lte('created_at', dayEnd)
+      .order('created_at', { ascending: true });
+
+    let html = '';
+
+    if (wlog) {
+      html += `
+        <div style="background:var(--bg-hover);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px;margin-bottom:14px;">
+          <div style="font-size:0.75rem;color:var(--ink-muted);margin-bottom:8px;letter-spacing:0.05em;">📊 작업 요약</div>
+          <div style="display:flex;gap:24px;">
+            <div><span style="font-family:var(--mono);font-size:1.1rem;color:var(--ink-primary);">${formatMinutes(wlog.work_minutes)}</span><div style="font-size:0.72rem;color:var(--ink-muted);margin-top:2px;">작업 시간</div></div>
+            <div><span style="font-family:var(--mono);font-size:1.1rem;color:var(--status-write);">${wlog.char_count.toLocaleString()}자</span><div style="font-size:0.72rem;color:var(--ink-muted);margin-top:2px;">집필 글자수</div></div>
+          </div>
+        </div>`;
+    }
+
+    if (glogs && glogs.length > 0) {
+      const groups = {};
+      glogs.forEach(l => {
+        const key = l.daily_goals?.goal_text || '(삭제된 목표)';
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(l);
+      });
+      html += `<div style="font-size:0.75rem;color:var(--ink-muted);margin-bottom:10px;letter-spacing:0.05em;">📋 작업 로그</div>`;
+      for (const [goalText, logs] of Object.entries(groups)) {
+        html += `
+          <div style="background:var(--bg-hover);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px;margin-bottom:10px;">
+            <div style="font-size:0.82rem;color:var(--accent);margin-bottom:8px;font-weight:500;">${escHtml(goalText)}</div>
+            ${logs.map(l => `
+              <div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-top:1px solid var(--border);">
+                <span style="font-family:var(--mono);font-size:0.72rem;color:var(--ink-muted);flex-shrink:0;margin-top:1px;">${fmtTime(l.created_at)}</span>
+                <span style="font-size:0.85rem;color:var(--ink-primary);">${escHtml(l.log_text)}</span>
+              </div>
+            `).join('')}
+          </div>`;
+      }
+    }
+
+    if (!html) {
+      html = `<div class="empty"><span class="empty-icon">📭</span>이 날의 기록이 없습니다.</div>`;
+    }
+    body.innerHTML = html;
+  } catch(e) {
+    body.innerHTML = `<div style="color:var(--danger);text-align:center;padding:20px;">불러오기 실패: ${escHtml(e.message)}</div>`;
+  }
+}
+
+function closeCalendarDayModal() {
+  document.getElementById('cal-day-modal').classList.remove('open');
 }
 
 /* ═══════════════════════════════════════════════════════════
