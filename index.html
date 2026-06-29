@@ -1001,6 +1001,7 @@ function closeCheckout() {
 async function confirmCheckout() {
   const chars = parseInt(document.getElementById('char-input').value) || 0;
   const mins  = Math.floor(timerPaused / 60000);
+  console.log('퇴근 저장 mins:', mins, 'timerPaused:', timerPaused); 
   const today = new Date().toISOString().slice(0, 10);
   setLoading('btn-confirm-checkout', true);
   try {
