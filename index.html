@@ -930,6 +930,7 @@ function setMyStatus(s) {
   document.getElementById('btn-rest').disabled = (s === 'none' || s === 'off' || s === 'resting');
   document.getElementById('btn-off').disabled  = (s === 'none' || s === 'off');
   broadcastPresence();
+  renderWriters(); 
 }
 
 async function changeMySkin(skinName) {
