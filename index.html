@@ -1108,16 +1108,14 @@ let writersTimerInterval = null;
 
 function startWritersTimer() {
   if (writersTimerInterval) return;
-  writersTimerInterval = setInterval(() => {
-    // 집필중인 작가들의 타이머만 실시간 갱신
-    document.querySelectorAll('.writer-work-timer[data-start]').forEach(el => {
-      const timerStart = parseInt(el.dataset.start);
-      const workMsBase = parseInt(el.dataset.base || '0');
-      const totalMs = workMsBase + (Date.now() - timerStart);
-      el.textContent = formatHms(totalMs);
-    });
-    // 집필중이 아닌 작가들도 (정지 상태) 표시는 이미 렌더링 시 고정값
-  }, 1000);
+ writersTimerInterval = setInterval(() => {
+  document.querySelectorAll('.writer-work-timer[data-start]').forEach(el => {
+    const segStart = parseInt(el.dataset.start);   // 현재 집필 세그먼트 시작점
+    const workMsBase = parseInt(el.dataset.base || '0'); // 이전까지 누적 작업 ms
+    const totalMs = workMsBase + (Date.now() - segStart);
+    el.textContent = formatHms(totalMs);
+  });
+}, 1000);
 }
 
 function stopWritersTimer() {
