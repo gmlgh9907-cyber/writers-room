@@ -826,7 +826,24 @@ async function checkAutoLogin() {
   } catch(e) { console.error("자동 로그인 연동 실패:", e); }
 }
 
-function doLogout() {
+async function doLogout() {
+  // 집필중/휴식중이면 자동 퇴근 기록
+  if (myStatus === 'writing' || myStatus === 'resting') {
+    if (myStatus === 'writing' && timerStart) { timerPaused += Date.now() - timerStart; timerStart = null; }
+    const mins = Math.floor(timerPaused / 60000);
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      const { data: existing } = await sb.from('work_logs').select('id').eq('nickname', currentUser.nickname).eq('log_date', today).maybeSingle();
+      if (existing) {
+        await sb.from('work_logs').update({ work_minutes: mins }).eq('id', existing.id);
+      } else {
+        await sb.from('work_logs').insert({ nickname: currentUser.nickname, log_date: today, work_minutes: mins, char_count: 0 });
+      }
+      showToast('자동 퇴근 처리됐어요. 다음엔 퇴근 버튼으로 글자수도 기록해 보세요! 📝', 'success');
+      await new Promise(r => setTimeout(r, 2000)); // 토스트 보이게 잠깐 대기
+    } catch(e) { console.error('자동 퇴근 실패:', e); }
+  }
+
   if (presenceChannel)  { presenceChannel.unsubscribe();  presenceChannel  = null; }
   if (broadcastChannel) { broadcastChannel.unsubscribe(); broadcastChannel = null; }
   if (midnightTimer)    { clearTimeout(midnightTimer); midnightTimer = null; }
