@@ -835,8 +835,7 @@ async function doLogout() {
     try {
       const { data: existing } = await sb.from('work_logs').select('id').eq('nickname', currentUser.nickname).eq('log_date', today).maybeSingle();
 if (existing) {
-  const { data: prev } = await sb.from('work_logs').select('work_minutes').eq('id', existing.id).single();
-  await sb.from('work_logs').update({ work_minutes: (prev.work_minutes || 0) + mins }).eq('id', existing.id);
+  await sb.from('work_logs').update({ work_minutes: mins }).eq('id', existing.id);
 } else {
   await sb.from('work_logs').insert({ nickname: currentUser.nickname, log_date: today, work_minutes: mins, char_count: 0 });
 }
@@ -1007,9 +1006,8 @@ async function confirmCheckout() {
   try {
     // 이미 오늘 임시 출석 기록이 있으면 update, 없으면 insert
     const { data: existing } = await sb.from('work_logs').select('id').eq('nickname', currentUser.nickname).eq('log_date', today).maybeSingle();
-  if (existing) {
-  const { data: prev } = await sb.from('work_logs').select('work_minutes').eq('id', existing.id).single();
-  const { error } = await sb.from('work_logs').update({ work_minutes: (prev.work_minutes || 0) + mins, char_count: chars }).eq('id', existing.id);
+if (existing) {
+  const { error } = await sb.from('work_logs').update({ work_minutes: mins, char_count: chars }).eq('id', existing.id);
   if (error) throw error;
 } else {
   const { error } = await sb.from('work_logs').insert({ nickname: currentUser.nickname, log_date: today, work_minutes: mins, char_count: chars });
