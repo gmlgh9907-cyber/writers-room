@@ -834,11 +834,13 @@ function setupBroadcast() {
   broadcastChannel = sb.channel('writers-shout');
   broadcastChannel
     .on('broadcast', { event: 'emoji-shout' }, ({ payload }) => {
-      showEmojiShout(payload.nickname, payload.emoji, payload.label);
+      // 이제 답장이 오면 배너가 아니라 퐁! 하고 튀어 오릅니다.
+      showPopEffect(payload.emoji); 
     })
     .on('broadcast', { event: 'poke-event' }, ({ payload }) => {
       if (payload.target === currentUser.nickname) {
-        showPokePop(); // 👈 여기서 손가락 퐁!
+        showPopEffect('👉'); // 찌르기는 손가락 퐁!
+        showReplyPanel(payload.sender); // 답장 버튼 상자 띄우기
       }
     })
     .subscribe();
@@ -1323,21 +1325,15 @@ async function sendPoke(targetNick) {
   }
 }
 
-async function sendPokeReply(emoji) {
+// 답장 보내기 (함수 이름을 수정하고, 타겟을 정확히 받도록 변경합니다)
+async function sendPokeReply(targetNick, emoji) {
   await broadcastChannel.send({
     type: 'broadcast', 
-    event: 'poke-reply',
-    payload: { sender: currentUser.nickname, target: currentSender, emoji: emoji }
+    event: 'emoji-shout', // 답장을 'shout' 이벤트로 보냅니다
+    payload: { nickname: currentUser.nickname, emoji: emoji, label: '답장이 왔어요!' }
   });
-  
-  showToast(`${currentSender} 작가에게 ${emoji} 답장을 보냈습니다!`, 'success');
-  closePokeModal();
+  showToast(`${targetNick} 작가에게 ${emoji} 답장을 보냈습니다!`, 'success');
 }
-
-function closePokeModal() { 
-  document.getElementById('poke-overlay').classList.remove('open'); 
-}
-
 
 // 찌르기 손가락 랜덤 팝업 함수
 function showPokePop() {
@@ -1390,10 +1386,8 @@ function showReplyPanel(senderName) {
       <button class="emoji-btn" onclick="sendPokeReply('${senderName}', '☕'); this.parentElement.parentElement.remove();">☕</button>
     </div>
   `;
-  
-  // 이 한 줄이 없으면 화면에 아무것도 안 나타납니다!
   container.appendChild(div);
-} // <--- 이 괄호가 꼭 있어야 합니다!
+}
 
 // 통신 감시 (이전 그대로 두셔도 됩니다)
 function setupBroadcast() {
@@ -1409,6 +1403,17 @@ function setupBroadcast() {
       }
     })
     .subscribe();
+}
+
+// 찌르기와 답장 모두 같은 효과를 내도록 만드는 함수
+function showPopEffect(emoji) {
+  const div = document.createElement('div');
+  div.className = 'poke-pop';
+  div.textContent = emoji;
+  div.style.left = (Math.random() * 80 + 10) + '%';
+  div.style.top = (Math.random() * 80 + 10) + '%';
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 1000); 
 }
 
 
