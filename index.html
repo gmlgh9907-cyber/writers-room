@@ -834,11 +834,12 @@ async function doLogout() {
     const today = new Date().toISOString().slice(0, 10);
     try {
       const { data: existing } = await sb.from('work_logs').select('id').eq('nickname', currentUser.nickname).eq('log_date', today).maybeSingle();
-      if (existing) {
-        await sb.from('work_logs').update({ work_minutes: mins }).eq('id', existing.id);
-      } else {
-        await sb.from('work_logs').insert({ nickname: currentUser.nickname, log_date: today, work_minutes: mins, char_count: 0 });
-      }
+if (existing) {
+  const { data: prev } = await sb.from('work_logs').select('work_minutes').eq('id', existing.id).single();
+  await sb.from('work_logs').update({ work_minutes: (prev.work_minutes || 0) + mins }).eq('id', existing.id);
+} else {
+  await sb.from('work_logs').insert({ nickname: currentUser.nickname, log_date: today, work_minutes: mins, char_count: 0 });
+}
       showToast('자동 퇴근 처리됐어요. 다음엔 퇴근 버튼으로 글자수도 기록해 보세요! 📝', 'success');
       await new Promise(r => setTimeout(r, 2000)); // 토스트 보이게 잠깐 대기
     } catch(e) { console.error('자동 퇴근 실패:', e); }
@@ -995,13 +996,14 @@ async function confirmCheckout() {
   try {
     // 이미 오늘 임시 출석 기록이 있으면 update, 없으면 insert
     const { data: existing } = await sb.from('work_logs').select('id').eq('nickname', currentUser.nickname).eq('log_date', today).maybeSingle();
-    if (existing) {
-      const { error } = await sb.from('work_logs').update({ work_minutes: mins, char_count: chars }).eq('id', existing.id);
-      if (error) throw error;
-    } else {
-      const { error } = await sb.from('work_logs').insert({ nickname: currentUser.nickname, log_date: today, work_minutes: mins, char_count: chars });
-      if (error) throw error;
-    }
+  if (existing) {
+  const { data: prev } = await sb.from('work_logs').select('work_minutes').eq('id', existing.id).single();
+  const { error } = await sb.from('work_logs').update({ work_minutes: (prev.work_minutes || 0) + mins, char_count: chars }).eq('id', existing.id);
+  if (error) throw error;
+} else {
+  const { error } = await sb.from('work_logs').insert({ nickname: currentUser.nickname, log_date: today, work_minutes: mins, char_count: chars });
+  if (error) throw error;
+}
     stopTimer(); setMyStatus('off');
     document.getElementById('checkout-overlay').classList.remove('open');
     showToast(`퇴근 기록 저장 성공!`, 'success');
