@@ -975,7 +975,9 @@ async function startWork() {
     try {
       const today = new Date().toISOString().slice(0, 10);
       const { data: existing } = await sb.from('work_logs').select('work_minutes').eq('nickname', currentUser.nickname).eq('log_date', today).maybeSingle();
+      console.log('오늘 기존 기록:', existing);        
       timerPaused = existing ? (existing.work_minutes * 60000) : 0;
+      console.log('timerPaused 설정값(ms):', timerPaused); 
     } catch(e) { timerPaused = 0; }
   } else if (myStatus === 'resting') { 
     timerStart = Date.now(); 
