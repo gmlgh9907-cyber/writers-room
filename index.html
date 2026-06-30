@@ -262,7 +262,19 @@ input::placeholder { color: var(--ink-muted); }
   position: relative; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); justify-content: space-between; min-height: 310px;
 }
 .writer-card:hover { transform: translateY(-3px); }
-.writer-card.is-me-card { border: 2px dashed var(--accent); background: rgba(124,111,205,0.03); }
+.writer-card.is-me-card {
+  border: 2px solid var(--accent);
+  background: rgba(124,111,205,0.05);
+  box-shadow: 0 0 0 3px rgba(124,111,205,0.15), 0 8px 24px rgba(124,111,205,0.2);
+  position: relative;
+}
+.is-me-tag {
+  position: absolute; top: 10px; left: 10px;
+  background: var(--accent); color: #fff;
+  font-size: 0.68rem; font-family: var(--serif); font-weight: 600;
+  padding: 2px 10px; border-radius: 100px; z-index: 3;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
 .writer-avatar {
   width: 72px; height: 72px; border-radius: var(--r-md);
   background: var(--accent-dim); display: flex; align-items: center; justify-content: center;
@@ -301,6 +313,19 @@ input::placeholder { color: var(--ink-muted); }
 
 /* ── 오늘의 목표 공유판 ── */
 .goal-section { display: flex; flex-direction: column; gap: 14px; flex: 1; min-height: 0; }
+.goal-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: -4px; }
+.train-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: 100px; border: 1px solid var(--border-hi);
+  background: var(--bg-hover); color: var(--ink-secondary);
+  font-size: 0.76rem; font-family: var(--sans); cursor: pointer; transition: all 0.18s;
+}
+.train-btn:hover { border-color: var(--accent); color: var(--ink-primary); }
+.train-btn.boarded {
+  background: rgba(232,184,75,0.12); border-color: var(--status-rest); color: var(--status-rest);
+  animation: trainPulse 2s ease-in-out infinite;
+}
+@keyframes trainPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(232,184,75,0.3); } 50% { box-shadow: 0 0 0 5px rgba(232,184,75,0); } }
 .goal-input-box { display: flex; gap: 8px; margin-bottom: 10px; }
 .goal-list { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; }
 
@@ -311,6 +336,11 @@ input::placeholder { color: var(--ink-muted); }
 .goal-item:hover { border-color: var(--border-hi); }
 .goal-item.completed { border-color: rgba(109,191,139,0.2); background: rgba(109,191,139,0.02); }
 .goal-item.completed .goal-text { color: var(--ink-muted); text-decoration: line-through; }
+.goal-item.is-mine {
+  border: 2px solid var(--accent);
+  background: rgba(124,111,205,0.05);
+  box-shadow: 0 0 0 3px rgba(124,111,205,0.15), 0 8px 24px rgba(124,111,205,0.2);
+}
 
 /* 목표 헤더 영역 */
 .goal-header { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; }
@@ -318,6 +348,17 @@ input::placeholder { color: var(--ink-muted); }
 .goal-checkbox.checked { background: var(--status-write); border-color: var(--status-write); }
 .goal-content { flex: 1; min-width: 0; }
 .goal-writer { font-size: 0.75rem; font-family: var(--serif); color: var(--accent); margin-bottom: 2px; }
+.train-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 0.68rem; color: var(--status-rest); background: rgba(232,184,75,0.12);
+  border: 1px solid rgba(232,184,75,0.3); border-radius: 100px; padding: 1px 8px;
+  margin-left: 6px; vertical-align: middle;
+}
+.goal-log-entry .log-recorded-tag {
+  font-size: 0.68rem; color: var(--status-write); background: rgba(109,191,139,0.12);
+  border: 1px solid rgba(109,191,139,0.25); border-radius: 100px; padding: 1px 7px;
+  margin-left: auto; flex-shrink: 0; white-space: nowrap;
+}
 .goal-text { font-size: 0.88rem; color: var(--ink-primary); word-break: break-all; }
 .goal-del-btn { background: none; border: none; color: var(--danger); opacity: 0.4; cursor: pointer; font-size: 0.8rem; padding: 2px; flex-shrink: 0; }
 .goal-del-btn:hover { opacity: 1; }
@@ -449,6 +490,22 @@ input::placeholder { color: var(--ink-muted); }
 .avatar-hint { font-size: 0.75rem; color: var(--ink-muted); }
 
 .emoji-modal { max-width: 360px; }
+.train-modal { max-width: 380px; }
+.train-modal-icon { font-size: 2.4rem; text-align: center; margin-bottom: 6px; }
+.train-time-select-row { display: flex; gap: 8px; align-items: center; justify-content: center; margin: 18px 0; }
+.train-time-select-row select { width: auto; flex: 1; text-align: center; font-family: var(--mono); font-size: 1rem; }
+.train-status-box {
+  background: rgba(232,184,75,0.08); border: 1px solid rgba(232,184,75,0.25);
+  border-radius: var(--r-md); padding: 14px 16px; text-align: center; margin-bottom: 16px;
+}
+.train-status-box .next-alarm { font-family: var(--mono); font-size: 1.3rem; color: var(--status-rest); font-weight: 600; }
+.train-status-box .next-alarm-label { font-size: 0.75rem; color: var(--ink-muted); margin-top: 4px; }
+
+/* 정각 알람 팝업 */
+.train-alarm-modal { max-width: 400px; border-color: var(--status-rest) !important; }
+.train-alarm-icon { font-size: 2.8rem; text-align: center; margin-bottom: 8px; animation: trainBell 0.6s ease-in-out infinite; }
+@keyframes trainBell { 0%,100% { transform: rotate(0deg); } 25% { transform: rotate(-8deg); } 75% { transform: rotate(8deg); } }
+.train-alarm-goal-select { margin-bottom: 14px; }
 .emoji-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 16px; }
 .emoji-btn { background: none; border: 1px solid transparent; border-radius: var(--r-sm); padding: 8px 4px; font-size: 1.3rem; cursor: pointer; text-align: center; transition: all 0.15s; line-height: 1; }
 .emoji-btn:hover { background: var(--bg-hover); border-color: var(--border); }
@@ -595,7 +652,13 @@ input::placeholder { color: var(--ink-muted); }
     </div>
 
     <div class="card">
-      <div class="card-title">오늘의 목표 공유방</div>
+      <div class="card-title" style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
+        <span>오늘의 목표 공유방</span>
+        <button class="train-btn" id="train-toggle-btn" onclick="openTrainModal()">
+          <span id="train-btn-icon">🚂</span>
+          <span id="train-btn-text">집필열차</span>
+        </button>
+      </div>
       <div class="goal-section">
         <div class="goal-input-box">
           <input type="text" id="new-goal-text" placeholder="오늘 달성할 목표를 적으세요 (예: 5000자 집필)" onkeydown="if(event.key==='Enter') addDailyGoal()" />
@@ -668,6 +731,57 @@ input::placeholder { color: var(--ink-muted); }
   </div>
 </div>
 
+<!-- 집필열차 탑승/하차 모달 -->
+<div class="overlay" id="train-overlay">
+  <div class="modal train-modal">
+    <div class="train-modal-icon">🚂</div>
+    <div class="modal-title" style="text-align:center;" id="train-modal-title">집필열차 탑승하기</div>
+    <div class="modal-sub" style="text-align:center;" id="train-modal-sub">목표를 향해 매시간 점검하며 달려요!</div>
+
+    <div id="train-board-section">
+      <div class="train-time-select-row">
+        <span style="font-size:0.85rem;color:var(--ink-secondary);">하차 시간</span>
+        <select id="train-checkout-hour"></select>
+        <span style="font-size:0.85rem;color:var(--ink-secondary);">시</span>
+      </div>
+      <div class="auth-error" id="train-error"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeTrainModal()">취소</button>
+        <button class="btn btn-primary" id="btn-board-train" onclick="boardTrain()">🚂 탑승하기</button>
+      </div>
+    </div>
+
+    <div id="train-riding-section" style="display:none;">
+      <div class="train-status-box">
+        <div class="next-alarm" id="train-next-alarm-time">—</div>
+        <div class="next-alarm-label">다음 알림 시각 · 하차 예정 <span id="train-checkout-label">—</span></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-danger" id="btn-leave-train" onclick="leaveTrain()">🚪 하차하기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 정각 알람 팝업 모달 -->
+<div class="overlay" id="train-alarm-overlay">
+  <div class="modal train-alarm-modal">
+    <div class="train-alarm-icon">🔔</div>
+    <div class="modal-title" style="text-align:center;" id="train-alarm-title"><span id="train-alarm-hour">—</span>시 정각, 기록할 시간!</div>
+    <div class="modal-sub" style="text-align:center;">집필열차가 멈췄어요. 지금 상황을 기록해 주세요.</div>
+    <div class="train-alarm-goal-select">
+      <select id="train-alarm-goal-select"></select>
+    </div>
+    <div class="form-group">
+      <input type="text" id="train-alarm-log-input" placeholder="현재 진행 상황을 적어주세요..." onkeydown="if(event.key==='Enter') submitTrainAlarmLog()" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="snoozeTrainAlarm()">나중에</button>
+      <button class="btn btn-primary" onclick="submitTrainAlarmLog()">기록하기</button>
+    </div>
+  </div>
+</div>
+
 <div class="emoji-shout" id="emoji-shout-banner">
   <div class="emoji-shout-icon" id="shout-icon"></div>
   <div class="emoji-shout-body">
@@ -727,6 +841,12 @@ let pendingAvatarDataUrl = null;
 let goalLogsCache = {};
 // 펼쳐진 목표 패널 세트
 let openLogPanels = new Set();
+
+/* ── 집필열차 상태 ── */
+let myTrain = null;        // { checkout_time(epoch ms), board_time, date } or null
+let trainAlarmInterval = null;
+let pendingTrainHour = null; // 현재 팝업으로 띄워진 정각 시(hour)
+let trainBoarders = {};      // { nickname: checkout_time(epoch ms) } — presence broadcast로 공유
 
 /* ═══════════════════════════════════════════════════════════
    도움 함수
@@ -826,24 +946,7 @@ async function checkAutoLogin() {
   } catch(e) { console.error("자동 로그인 연동 실패:", e); }
 }
 
-async function doLogout() {
-  // 집필중/휴식중이면 자동 퇴근 기록
-  if (myStatus === 'writing' || myStatus === 'resting') {
-    if (myStatus === 'writing' && timerStart) { timerPaused += Date.now() - timerStart; timerStart = null; }
-    const mins = Math.floor(timerPaused / 60000);
-    const today = new Date().toISOString().slice(0, 10);
-    try {
-      const { data: existing } = await sb.from('work_logs').select('id').eq('nickname', currentUser.nickname).eq('log_date', today).maybeSingle();
-if (existing) {
-  await sb.from('work_logs').update({ work_minutes: mins }).eq('id', existing.id);
-} else {
-  await sb.from('work_logs').insert({ nickname: currentUser.nickname, log_date: today, work_minutes: mins, char_count: 0 });
-}
-      showToast('자동 퇴근 처리됐어요. 다음엔 퇴근 버튼으로 글자수도 기록해 보세요! 📝', 'success');
-      await new Promise(r => setTimeout(r, 2000)); // 토스트 보이게 잠깐 대기
-    } catch(e) { console.error('자동 퇴근 실패:', e); }
-  }
-
+function doLogout() {
   if (presenceChannel)  { presenceChannel.unsubscribe();  presenceChannel  = null; }
   if (broadcastChannel) { broadcastChannel.unsubscribe(); broadcastChannel = null; }
   if (midnightTimer)    { clearTimeout(midnightTimer); midnightTimer = null; }
@@ -852,6 +955,9 @@ if (existing) {
   clearTimerState();
   stopTimer();
   stopWritersTimer();
+  stopTrainAlarmScheduler();
+  myTrain = null; pendingTrainHour = null; trainBoarders = {};
+  localStorage.removeItem('wr_train_state');
   myStatus = 'none'; currentUser = null; presenceMap = {};
   goalLogsCache = {}; openLogPanels = new Set();
   document.getElementById('main-screen').style.display = 'none';
@@ -870,6 +976,8 @@ function enterRoom() {
   restoreTimerState();    // ← 타이머 복원 (presence 세팅 후)
   broadcastPresence();    // ← 복원된 상태로 즉시 broadcast
   scheduleMidnightCheckout(); // ← 자정 자동 퇴근 예약
+  requestNotificationPermission(); // ← 집필열차 알림 권한 요청
+  restoreTrainState();    // ← 집필열차 상태 복원
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -881,12 +989,47 @@ function setupPresence() {
     .on('presence', { event: 'sync' }, () => {
       const state = presenceChannel.presenceState();
       presenceMap = {};
-      for (const [key, list] of Object.entries(state)) presenceMap[key] = list[list.length - 1];
+      trainBoarders = {};
+      for (const [key, list] of Object.entries(state)) {
+        const p = list[list.length - 1];
+        presenceMap[key] = p;
+        if (p.onTrain) trainBoarders[p.nickname] = p.trainCheckoutTime;
+      }
       renderWriters();
+      updateAllTrainBadges();
     })
-    .on('presence', { event: 'join' }, ({ key, newPresences }) => { presenceMap[key] = newPresences[newPresences.length - 1]; renderWriters(); })
-    .on('presence', { event: 'leave' }, ({ key }) => { delete presenceMap[key]; renderWriters(); })
+    .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+      const p = newPresences[newPresences.length - 1];
+      presenceMap[key] = p;
+      if (p.onTrain) trainBoarders[p.nickname] = p.trainCheckoutTime;
+      else delete trainBoarders[p.nickname];
+      renderWriters();
+      updateAllTrainBadges();
+    })
+    .on('presence', { event: 'leave' }, ({ key }) => {
+      const p = presenceMap[key];
+      if (p) delete trainBoarders[p.nickname];
+      delete presenceMap[key];
+      renderWriters();
+      updateAllTrainBadges();
+    })
     .subscribe(async (status) => { if (status === 'SUBSCRIBED') await broadcastPresence(); });
+}
+
+// 목표 목록 화면에서 각 작가의 집필열차 탑승 뱃지를 갱신 (목표 목록 재로딩 없이)
+function updateAllTrainBadges() {
+  document.querySelectorAll('.goal-writer').forEach(el => {
+    const nickname = el.dataset.nickname;
+    if (!nickname) return;
+    const existingBadge = el.querySelector('.train-badge');
+    if (trainBoarders[nickname] !== undefined) {
+      if (!existingBadge) {
+        el.insertAdjacentHTML('beforeend', `<span class="train-badge">🔥 집필열차 탑승중</span>`);
+      }
+    } else if (existingBadge) {
+      existingBadge.remove();
+    }
+  });
 }
 
 async function broadcastPresence() {
@@ -902,6 +1045,8 @@ async function broadcastPresence() {
     since:       new Date().toISOString(),
     workMs:      currentMs,       // 오늘 총 누적 작업시간(ms)
     timerStart:  myStatus === 'writing' ? timerStart : null, // 현재 세그먼트 시작점
+    onTrain:     !!myTrain,        // 집필열차 탑승 여부
+    trainCheckoutTime: myTrain ? myTrain.checkout_time : null,
   });
 }
 
@@ -947,14 +1092,6 @@ function setMyStatus(s) {
   document.getElementById('btn-rest').disabled = (s === 'none' || s === 'off' || s === 'resting');
   document.getElementById('btn-off').disabled  = (s === 'none' || s === 'off');
   broadcastPresence();
-  const currentMs = timerPaused + (timerStart ? Date.now() - timerStart : 0);
-  presenceMap[currentUser.nickname] = {
-    ...presenceMap[currentUser.nickname],
-    status:     s,
-    workMs:     currentMs,
-    timerStart: s === 'writing' ? timerStart : null,
-  };
-  renderWriters();
 }
 
 async function changeMySkin(skinName) {
@@ -964,21 +1101,12 @@ async function changeMySkin(skinName) {
   showToast('스킨을 적용했습니다!', 'success');
 }
 
-async function startWork() {
-  if (myStatus === 'none' || myStatus === 'off') {
-    timerStart = Date.now();
-    autoAttendanceMarked = false;
-    // 오늘 이미 기록된 시간이 있으면 불러와서 누적
-    try {
-      const today = new Date().toISOString().slice(0, 10);
-      const { data: existing } = await sb.from('work_logs').select('work_minutes').eq('nickname', currentUser.nickname).eq('log_date', today).maybeSingle();     
-      timerPaused = existing ? (existing.work_minutes * 60000) : 0;
-    } catch(e) { timerPaused = 0; }
-  } else if (myStatus === 'resting') { 
-    timerStart = Date.now(); 
-  }
+function startWork() {
+  if (myStatus === 'none' || myStatus === 'off') { timerStart = Date.now(); timerPaused = 0; autoAttendanceMarked = false; }
+  else if (myStatus === 'resting') { timerStart = Date.now(); }
   startTimerInterval(); setMyStatus('writing'); saveTimerState();
-}function startRest() {
+}
+function startRest() {
   if (timerStart) timerPaused += Date.now() - timerStart;
   timerStart = null; stopTimerInterval(); setMyStatus('resting'); saveTimerState();
 }
@@ -1002,13 +1130,13 @@ async function confirmCheckout() {
   try {
     // 이미 오늘 임시 출석 기록이 있으면 update, 없으면 insert
     const { data: existing } = await sb.from('work_logs').select('id').eq('nickname', currentUser.nickname).eq('log_date', today).maybeSingle();
-if (existing) {
-  const { error } = await sb.from('work_logs').update({ work_minutes: mins, char_count: chars }).eq('id', existing.id);
-  if (error) throw error;
-} else {
-  const { error } = await sb.from('work_logs').insert({ nickname: currentUser.nickname, log_date: today, work_minutes: mins, char_count: chars });
-  if (error) throw error;
-}
+    if (existing) {
+      const { error } = await sb.from('work_logs').update({ work_minutes: mins, char_count: chars }).eq('id', existing.id);
+      if (error) throw error;
+    } else {
+      const { error } = await sb.from('work_logs').insert({ nickname: currentUser.nickname, log_date: today, work_minutes: mins, char_count: chars });
+      if (error) throw error;
+    }
     stopTimer(); setMyStatus('off');
     document.getElementById('checkout-overlay').classList.remove('open');
     showToast(`퇴근 기록 저장 성공!`, 'success');
@@ -1058,7 +1186,7 @@ function restoreTimerState() {
   if (savedStatus === 'writing') startTimerInterval();
 }
 
-/* ── 자정 감지 ── */
+/* ── 자정 감지 (출근/집필열차 중이면 자동 연장) ── */
 let midnightTimer = null;
 function scheduleMidnightCheckout() {
   if (midnightTimer) clearTimeout(midnightTimer);
@@ -1066,21 +1194,58 @@ function scheduleMidnightCheckout() {
   const next = new Date(now); next.setHours(24, 0, 5, 0); // 자정 + 5초 여유
   const msUntilMidnight = next - now;
   midnightTimer = setTimeout(async () => {
-    if (myStatus === 'writing' || myStatus === 'resting') {
-      // 현재까지 누적 시간 반영
-      if (myStatus === 'writing' && timerStart) { timerPaused += Date.now() - timerStart; timerStart = null; }
-      stopTimerInterval();
-      clearTimerState();
-      // 모달 띄우기
-      document.getElementById('modal-time').textContent = formatMinutes(Math.floor(timerPaused / 60000));
-      document.getElementById('char-input').value = '';
-      document.getElementById('checkout-overlay').classList.add('open');
-      showToast('자정이 지났습니다. 오늘 작업을 기록하고 퇴근해 주세요!', 'success');
-      setTimeout(() => document.getElementById('char-input').focus(), 200);
+    if (myStatus === 'writing' || myStatus === 'resting' || myTrain) {
+      await handleMidnightAutoExtend();
     }
     // 다음 날 자정을 위해 재예약
     scheduleMidnightCheckout();
   }, msUntilMidnight);
+}
+
+// 자정이 지났는데 출근/휴식 중(즉 아직 퇴근 안 함)이거나 집필열차 탑승 중이면
+// 어제 날짜로 work_logs를 마감하고, 오늘 날짜로 새로 시작
+async function handleMidnightAutoExtend() {
+  const yesterday = new Date(Date.now() - 24*60*60*1000).toISOString().slice(0, 10);
+  const today = new Date().toISOString().slice(0, 10);
+
+  // 출근/휴식 중이었다면 자정 시점까지의 시간을 어제 날짜로 마감
+  if (myStatus === 'writing' || myStatus === 'resting') {
+    if (myStatus === 'writing' && timerStart) { timerPaused += Date.now() - timerStart; }
+    const minsForYesterday = Math.floor(timerPaused / 60000);
+
+    try {
+      const { data: existing } = await sb.from('work_logs').select('id, work_minutes').eq('nickname', currentUser.nickname).eq('log_date', yesterday).maybeSingle();
+      if (existing) {
+        await sb.from('work_logs').update({ work_minutes: minsForYesterday }).eq('id', existing.id);
+      } else if (minsForYesterday > 0) {
+        await sb.from('work_logs').insert({ nickname: currentUser.nickname, log_date: yesterday, work_minutes: minsForYesterday, char_count: 0 });
+      }
+    } catch(e) { console.error('자정 마감 기록 실패:', e); }
+
+    // 오늘 날짜로 타이머 리셋 (계속 집필 중이면 새 세그먼트 시작)
+    timerPaused = 0;
+    if (myStatus === 'writing') { timerStart = Date.now(); }
+    autoAttendanceMarked = false;
+    saveTimerState();
+    loadStats(); // 어제 기록 반영 + 오늘 달력 갱신
+  }
+
+  // 오늘의 목표 자동 연장 (자정 넘어도 화면에서 안 사라지게)
+  try {
+    await sb.from('daily_goals').update({ created_at: new Date().toISOString() })
+      .eq('nickname', currentUser.nickname)
+      .gte('created_at', new Date(yesterday + 'T00:00:00').toISOString())
+      .lte('created_at', new Date(yesterday + 'T23:59:59').toISOString());
+  } catch(e) { console.error('목표 연장 실패:', e); }
+
+  // 집필열차 탑승 중이면 date 필드도 오늘로 갱신 (checkout_time 자체는 그대로 유지)
+  if (myTrain) {
+    myTrain.date = today;
+    saveTrainState();
+  }
+
+  showToast('🌙 자정이 지났습니다. 목표가 자동연장됩니다.', 'success');
+  loadDailyGoals();
 }
 
 function startTimerInterval() {
@@ -1142,14 +1307,16 @@ let writersTimerInterval = null;
 
 function startWritersTimer() {
   if (writersTimerInterval) return;
- writersTimerInterval = setInterval(() => {
-  document.querySelectorAll('.writer-work-timer[data-start]').forEach(el => {
-    const segStart = parseInt(el.dataset.start);   // 현재 집필 세그먼트 시작점
-    const workMsBase = parseInt(el.dataset.base || '0'); // 이전까지 누적 작업 ms
-    const totalMs = workMsBase + (Date.now() - segStart);
-    el.textContent = formatHms(totalMs);
-  });
-}, 1000);
+  writersTimerInterval = setInterval(() => {
+    // 집필중인 작가들의 타이머만 실시간 갱신
+    document.querySelectorAll('.writer-work-timer[data-start]').forEach(el => {
+      const timerStart = parseInt(el.dataset.start);
+      const workMsBase = parseInt(el.dataset.base || '0');
+      const totalMs = workMsBase + (Date.now() - timerStart);
+      el.textContent = formatHms(totalMs);
+    });
+    // 집필중이 아닌 작가들도 (정지 상태) 표시는 이미 렌더링 시 고정값
+  }, 1000);
 }
 
 function stopWritersTimer() {
@@ -1163,7 +1330,12 @@ function renderWriters() {
     return;
   }
   const order = { writing:0, resting:1, off:2, none:3 };
-  entries.sort((a,b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
+  entries.sort((a,b) => {
+    const aMine = a.nickname === currentUser?.nickname;
+    const bMine = b.nickname === currentUser?.nickname;
+    if (aMine !== bMine) return aMine ? -1 : 1; // 내 카드 최우선
+    return (order[a.status] ?? 9) - (order[b.status] ?? 9);
+  });
 
   list.innerHTML = entries.map(e => {
     const m = STATUS_META[e.status] || STATUS_META.none;
@@ -1188,7 +1360,7 @@ function renderWriters() {
 
     return `
       <div class="writer-card skin-${cardSkin} ${isMe ? 'is-me-card' : ''}">
-        <span class="writer-status-pill ${m.cls}">${m.label}</span>
+        ${isMe ? `<span class="is-me-tag">나</span>` : ''}        <span class="writer-status-pill ${m.cls}">${m.label}</span>
         <div class="writer-avatar ${m.cls}">${imgHtml}</div>
         <div>
           <div class="writer-name">${escHtml(e.nickname)}</div>
@@ -1312,20 +1484,21 @@ function renderGoalItem(g) {
         <span class="goal-log-time">${fmtTime(log.created_at)}</span>
         <div class="goal-log-dot"></div>
         <span class="goal-log-text">${escHtml(log.log_text)}</span>
+        ${log.recorded_hour != null ? `<span class="log-recorded-tag">${log.recorded_hour}시 기록완료</span>` : ''}
         ${isMyLog ? `<button class="goal-log-del" onclick="deleteGoalLog(${log.id}, ${g.id})" title="삭제">✕</button>` : ''}
       </div>
     `;
   }).join('');
 
   return `
-    <div class="goal-item ${g.is_completed ? 'completed' : ''}" id="goal-item-${g.id}">
+    <div class="goal-item ${g.is_completed ? 'completed' : ''} ${isMyGoal ? 'is-mine' : ''}" id="goal-item-${g.id}">
       <div class="goal-header">
         <div class="goal-checkbox ${g.is_completed ? 'checked' : ''}"
              onclick="${isMyGoal ? `toggleGoalCompletion(${g.id}, ${g.is_completed})` : `showToast('본인의 목표만 체크할 수 있습니다.')`}">
           ${g.is_completed ? '✓' : ''}
         </div>
         <div class="goal-content">
-          <div class="goal-writer">${escHtml(g.nickname)} ${isMyGoal ? '<span style="color:var(--ink-muted); font-size:0.7rem;">(나)</span>' : ''}</div>
+          <div class="goal-writer" data-nickname="${escHtml(g.nickname)}">${escHtml(g.nickname)} ${isMyGoal ? '<span style="color:var(--ink-muted); font-size:0.7rem;">(나)</span>' : ''}${trainBoarders[g.nickname] !== undefined ? '<span class="train-badge">🔥 집필열차 탑승중</span>' : ''}</div>
           <div class="goal-text">${escHtml(g.goal_text)}</div>
         </div>
         ${isMyGoal ? `<button class="goal-del-btn" onclick="deleteGoal(${g.id})">✕</button>` : ''}
@@ -1437,6 +1610,7 @@ function refreshLogEntries(goalId) {
         <span class="goal-log-time">${fmtTime(log.created_at)}</span>
         <div class="goal-log-dot"></div>
         <span class="goal-log-text">${escHtml(log.log_text)}</span>
+        ${log.recorded_hour != null ? `<span class="log-recorded-tag">${log.recorded_hour}시 기록완료</span>` : ''}
         ${isMyLog ? `<button class="goal-log-del" onclick="deleteGoalLog(${log.id}, ${goalId})" title="삭제">✕</button>` : ''}
       </div>
     `;
@@ -1521,6 +1695,257 @@ async function handleGoalLogChange(payload) {
     refreshLogEntries(goalId);
     updateLogToggleBadge(goalId);
   } catch(e) { /* 무시 */ }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   🚂 집필열차
+═══════════════════════════════════════════════════════════ */
+function requestNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function saveTrainState() {
+  if (myTrain) {
+    localStorage.setItem('wr_train_state', JSON.stringify(myTrain));
+  } else {
+    localStorage.removeItem('wr_train_state');
+  }
+}
+
+function restoreTrainState() {
+  const saved = localStorage.getItem('wr_train_state');
+  if (!saved) return;
+  try {
+    const parsed = JSON.parse(saved);
+    // 하차 시각이 이미 지났으면 자동 폐기 (자정을 넘는 탑승도 하차 시각 전까지는 유지)
+    if (!parsed.checkout_time || Date.now() >= parsed.checkout_time) { localStorage.removeItem('wr_train_state'); return; }
+    myTrain = parsed;
+    startTrainAlarmScheduler();
+    updateTrainButtonUI();
+    broadcastPresence();
+  } catch(e) { localStorage.removeItem('wr_train_state'); }
+}
+
+async function openTrainModal() {
+  // 목표 등록 여부 확인
+  const { data: myGoals } = await sb.from('daily_goals').select('id, goal_text')
+    .eq('nickname', currentUser.nickname)
+    .gte('created_at', (() => { const d = new Date(); d.setHours(0,0,0,0); return d.toISOString(); })());
+
+  document.getElementById('train-error').textContent = '';
+
+  if (myTrain) {
+    // 이미 탑승 중 → 하차 화면
+    document.getElementById('train-modal-title').textContent = '집필열차 탑승 중';
+    document.getElementById('train-modal-sub').textContent = '오늘 목표를 향해 달리는 중이에요 🔥';
+    document.getElementById('train-board-section').style.display = 'none';
+    document.getElementById('train-riding-section').style.display = 'block';
+    document.getElementById('train-checkout-label').textContent = formatTrainCheckoutLabel(new Date(myTrain.checkout_time));
+    updateNextAlarmDisplay();
+  } else {
+    if (!myGoals || myGoals.length === 0) {
+      document.getElementById('train-error').textContent = '오늘의 목표를 먼저 등록해야 탑승할 수 있어요!';
+      document.getElementById('train-modal-title').textContent = '집필열차 탑승하기';
+      document.getElementById('train-modal-sub').textContent = '목표를 향해 매시간 점검하며 달려요!';
+      document.getElementById('train-board-section').style.display = 'block';
+      document.getElementById('train-riding-section').style.display = 'none';
+      document.getElementById('train-overlay').classList.add('open');
+      return;
+    }
+    document.getElementById('train-modal-title').textContent = '집필열차 탑승하기';
+    document.getElementById('train-modal-sub').textContent = '목표를 향해 매시간 점검하며 달려요!';
+    document.getElementById('train-board-section').style.display = 'block';
+    document.getElementById('train-riding-section').style.display = 'none';
+
+    // 하차 시간 선택 옵션 채우기 (1시간 후 ~ 최대 12시간 후, 자정 넘어가도 지원)
+    const now = new Date();
+    const sel = document.getElementById('train-checkout-hour');
+    sel.innerHTML = '';
+    for (let offset = 1; offset <= 12; offset++) {
+      const target = new Date(now.getTime() + offset * 60 * 60 * 1000);
+      const label = (target.getDate() !== now.getDate())
+        ? `내일 ${target.getHours()}시 (${offset}시간 후)`
+        : `${target.getHours()}시 (${offset}시간 후)`;
+      sel.innerHTML += `<option value="${offset}">${label}</option>`;
+    }
+  }
+
+  document.getElementById('train-overlay').classList.add('open');
+}
+
+function closeTrainModal() {
+  document.getElementById('train-overlay').classList.remove('open');
+}
+
+async function boardTrain() {
+  const offsetHours = parseInt(document.getElementById('train-checkout-hour').value);
+  const boardTime = Date.now();
+  const checkoutTime = boardTime + offsetHours * 60 * 60 * 1000;
+  const today = new Date().toISOString().slice(0, 10);
+  myTrain = {
+    checkout_time: checkoutTime,   // 하차 예정 시각(epoch ms)
+    board_time: boardTime,
+    date: today
+  };
+  saveTrainState();
+  startTrainAlarmScheduler();
+  updateTrainButtonUI();
+  broadcastPresence();
+  closeTrainModal();
+  const checkoutDate = new Date(checkoutTime);
+  const label = formatTrainCheckoutLabel(checkoutDate);
+  showToast(`🚂 집필열차에 탑승했어요! ${label}에 하차해요.`, 'success');
+}
+
+// 하차 시각을 "n시간 후 (오늘/내일 H시)" 형태로 표시
+function formatTrainCheckoutLabel(date) {
+  const now = new Date();
+  const hour = date.getHours();
+  const dayLabel = (date.getDate() !== now.getDate()) ? '내일 ' : '';
+  return `${dayLabel}${hour}시`;
+}
+
+function leaveTrain() {
+  myTrain = null;
+  pendingTrainHour = null;
+  stopTrainAlarmScheduler();
+  saveTrainState();
+  updateTrainButtonUI();
+  broadcastPresence();
+  closeTrainModal();
+  showToast('🚪 집필열차에서 하차했어요. 오늘도 고생하셨어요!', 'success');
+}
+
+function updateTrainButtonUI() {
+  const icon = document.getElementById('train-btn-icon');
+  const text = document.getElementById('train-btn-text');
+  const btn  = document.getElementById('train-toggle-btn');
+  if (myTrain) {
+    icon.textContent = '🔥';
+    text.textContent = `탑승중 (${formatTrainCheckoutLabel(new Date(myTrain.checkout_time))} 하차)`;
+    btn.classList.add('boarded');
+  } else {
+    icon.textContent = '🚂';
+    text.textContent = '집필열차';
+    btn.classList.remove('boarded');
+  }
+}
+
+function updateNextAlarmDisplay() {
+  if (!myTrain) return;
+  const el = document.getElementById('train-next-alarm-time');
+  if (!el) return;
+  // 다음 정각 시각 계산
+  const now = new Date();
+  const next = new Date(now);
+  next.setHours(now.getHours() + 1, 0, 0, 0);
+  if (next.getTime() > myTrain.checkout_time) {
+    el.textContent = '하차 시간 도달';
+  } else {
+    const dayLabel = (next.getDate() !== now.getDate()) ? '내일 ' : '';
+    el.textContent = `${dayLabel}${next.getHours()}:00`;
+  }
+}
+
+/* ── 정각 알람 스케줄러 ── */
+function startTrainAlarmScheduler() {
+  stopTrainAlarmScheduler();
+  // 1초마다 체크: 정각이 되었고, 하차 시각 이전이며, 아직 이 시각 알람을 안 띄웠으면 띄움
+  trainAlarmInterval = setInterval(() => {
+    if (!myTrain) return;
+    const now = new Date();
+    const nowMs = now.getTime();
+    // 정각(0~5초 사이)이고, 탑승 시각보다 늦고, 하차 시각 이전일 때
+    if (now.getMinutes() === 0 && now.getSeconds() <= 5 && nowMs > myTrain.board_time && nowMs <= myTrain.checkout_time) {
+      const curHour = now.getHours();
+      const fireKey = `${now.toISOString().slice(0,10)}-${curHour}`;
+      const lastFired = localStorage.getItem('wr_train_last_fired_hour');
+      if (lastFired !== fireKey) {
+        localStorage.setItem('wr_train_last_fired_hour', fireKey);
+        triggerTrainAlarm(curHour);
+      }
+    }
+  }, 1000);
+}
+
+function stopTrainAlarmScheduler() {
+  if (trainAlarmInterval) { clearInterval(trainAlarmInterval); trainAlarmInterval = null; }
+}
+
+async function triggerTrainAlarm(hour) {
+  pendingTrainHour = hour;
+
+  // 브라우저 알림 (백그라운드에서도 표시)
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try {
+      const notif = new Notification('🚂 집필열차 정각 알림', {
+        body: `${hour}시 정각! 지금 상황을 기록해 주세요.`,
+        icon: '🔔',
+        tag: 'writers-train-alarm',
+        requireInteraction: true
+      });
+      notif.onclick = () => { window.focus(); notif.close(); };
+    } catch(e) { /* 무시 */ }
+  }
+
+  // 인앱 모달 팝업
+  document.getElementById('train-alarm-hour').textContent = hour;
+  document.getElementById('train-alarm-log-input').value = '';
+
+  // 내 목표 목록을 select에 채우기
+  try {
+    const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+    const { data: myGoals } = await sb.from('daily_goals').select('id, goal_text')
+      .eq('nickname', currentUser.nickname)
+      .gte('created_at', todayStart.toISOString())
+      .order('created_at', { ascending: true });
+
+    const sel = document.getElementById('train-alarm-goal-select');
+    if (!myGoals || myGoals.length === 0) {
+      sel.innerHTML = `<option value="">등록된 목표 없음</option>`;
+    } else {
+      sel.innerHTML = myGoals.map(g => `<option value="${g.id}">${escHtml(g.goal_text)}</option>`).join('');
+    }
+  } catch(e) { /* 무시 */ }
+
+  document.getElementById('train-alarm-overlay').classList.add('open');
+  document.getElementById('train-alarm-overlay').classList.add('show');
+  setTimeout(() => document.getElementById('train-alarm-log-input').focus(), 200);
+}
+
+function snoozeTrainAlarm() {
+  document.getElementById('train-alarm-overlay').classList.remove('open');
+  showToast('알림을 닫았어요. 작업 로그에서 언제든 기록할 수 있어요!', '');
+}
+
+async function submitTrainAlarmLog() {
+  const goalId = document.getElementById('train-alarm-goal-select').value;
+  const txt = document.getElementById('train-alarm-log-input').value.trim();
+  const hour = pendingTrainHour;
+
+  if (!goalId) { showToast('등록된 목표가 없어요.', 'error'); return; }
+  if (!txt) { showToast('현재 상황을 입력해 주세요.', 'error'); return; }
+
+  try {
+    const { data, error } = await sb.from('goal_logs').insert({
+      goal_id: parseInt(goalId),
+      nickname: currentUser.nickname,
+      log_text: txt,
+      recorded_hour: hour   // ← [n시 기록완료] 표시용
+    }).select().single();
+    if (error) throw error;
+
+    if (!goalLogsCache[goalId]) goalLogsCache[goalId] = [];
+    goalLogsCache[goalId].push(data);
+    refreshLogEntries(goalId);
+    updateLogToggleBadge(goalId);
+
+    document.getElementById('train-alarm-overlay').classList.remove('open');
+    showToast(`✅ ${hour}시 기록 완료!`, 'success');
+  } catch(e) { showToast('기록 실패: ' + e.message, 'error'); }
 }
 
 /* ═══════════════════════════════════════════════════════════
