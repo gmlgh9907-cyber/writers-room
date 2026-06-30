@@ -1844,9 +1844,20 @@ async function boardTrain() {
   updateTrainButtonUI();
   broadcastPresence();
   closeTrainModal();
+  warmUpAudioContext(); // 사용자 클릭 시점에 미리 오디오 활성화 (브라우저 자동재생 정책 대응)
   const checkoutDate = new Date(checkoutTime);
   const label = formatTrainCheckoutLabel(checkoutDate);
   showToast(`🚂 집필열차에 탑승했어요! ${label}에 하차해요.`, 'success');
+}
+
+// 브라우저는 사용자 상호작용 없이는 오디오 재생을 막기 때문에,
+// 탑승 버튼(사용자 클릭) 시점에 미리 AudioContext를 한 번 깨워둔다.
+let _warmedAudioCtx = null;
+function warmUpAudioContext() {
+  try {
+    if (!_warmedAudioCtx) _warmedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_warmedAudioCtx.state === 'suspended') _warmedAudioCtx.resume();
+  } catch(e) { /* 무시 */ }
 }
 
 // 하차 시각을 "n시간 후 (오늘/내일 H시)" 형태로 표시
@@ -1924,8 +1935,29 @@ function stopTrainAlarmScheduler() {
   if (trainAlarmInterval) { clearInterval(trainAlarmInterval); trainAlarmInterval = null; }
 }
 
+/* ── 알람 소리 (Web Audio API로 생성, 외부 파일 불필요) ── */
+function playTrainAlarmSound() {
+  try {
+    const ctx = _warmedAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 1000;
+    const now = ctx.currentTime;
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.18, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(now); osc.stop(now + 0.7);
+  } catch(e) { /* 오디오 컨텍스트 생성 실패 시 무시 (브라우저 정책 등) */ }
+}
+
 async function triggerTrainAlarm(hour) {
   pendingTrainHour = hour;
+
+  // 알람 소리 재생
+  playTrainAlarmSound();
 
   // 브라우저 알림 (백그라운드에서도 표시)
   if ('Notification' in window && Notification.permission === 'granted') {
@@ -2436,6 +2468,10 @@ function showReplyPanel(senderName) {
    자동 로그인
 ═══════════════════════════════════════════════════════════ */
 window.addEventListener('load', () => { checkAutoLogin(); });
+
+// 브라우저 자동재생 정책 대응: 사용자가 페이지 어디든 처음 클릭/키 입력하면 오디오 활성화
+document.addEventListener('click', warmUpAudioContext, { once: true });
+document.addEventListener('keydown', warmUpAudioContext, { once: true });
 </script>
 </body>
 </html>
