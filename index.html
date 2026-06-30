@@ -438,6 +438,41 @@ input::placeholder { color: var(--ink-muted); }
 .stats-tab { flex: 1; padding: 9px; background: transparent; border: none; color: var(--ink-muted); font-family: var(--sans); font-size: 0.82rem; cursor: pointer; transition: all 0.18s; }
 .stats-tab.active { background: var(--accent-dim); color: var(--ink-primary); }
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.graph-section { margin-bottom: 20px; }
+.graph-metric-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.graph-metric-tab {
+  flex: 1; padding: 7px; background: var(--bg-hover); border: 1px solid var(--border);
+  border-radius: var(--r-sm); color: var(--ink-muted); font-family: var(--sans);
+  font-size: 0.76rem; cursor: pointer; transition: all 0.18s;
+}
+.graph-metric-tab.active { background: var(--accent-dim); color: var(--ink-primary); border-color: var(--accent); }
+.bar-graph {
+  display: flex; align-items: flex-end; gap: 4px;
+  height: 120px; padding: 8px 4px 22px; background: var(--bg-hover);
+  border: 1px solid var(--border); border-radius: var(--r-md); overflow-x: auto;
+}
+.bar-graph-col {
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  flex: 1; min-width: 22px; height: 100%; gap: 4px; position: relative;
+}
+.bar-graph-bar {
+  width: 60%; min-width: 10px; border-radius: 3px 3px 0 0;
+  background: var(--accent); transition: height 0.3s ease;
+  position: relative; cursor: default;
+}
+.bar-graph-bar.is-today { background: var(--status-write); }
+.bar-graph-bar:hover::after {
+  content: attr(data-tooltip);
+  position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+  margin-bottom: 6px; background: var(--bg-card); border: 1px solid var(--border-hi);
+  color: var(--ink-primary); font-size: 0.7rem; padding: 4px 8px; border-radius: var(--r-sm);
+  white-space: nowrap; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.bar-graph-label {
+  font-size: 0.62rem; color: var(--ink-muted); white-space: nowrap;
+  position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%);
+}
+.bar-graph-empty { width: 100%; text-align: center; color: var(--ink-muted); font-size: 0.8rem; align-self: center; }
 .stat-block { background: var(--bg-hover); border: 1px solid var(--border); border-radius: var(--r-md); padding: 16px; }
 .stat-value { font-family: var(--mono); font-size: 1.4rem; font-weight: 500; color: var(--ink-primary); line-height: 1; }
 .stat-label { font-size: 0.75rem; color: var(--ink-muted); margin-top: 5px; letter-spacing: 0.03em; }
@@ -629,12 +664,26 @@ input::placeholder { color: var(--ink-muted); }
             <div class="stat-block"><div class="stat-value" id="w-time">—</div><div class="stat-label">작업 시간</div></div>
             <div class="stat-block accent" style="grid-column:1/-1"><div class="stat-value" id="w-chars">—</div><div class="stat-label">총 집필 글자수</div></div>
           </div>
+          <div class="graph-section">
+            <div class="graph-metric-tabs">
+              <button class="graph-metric-tab active" onclick="switchGraphMetric('week','time')">⏱ 작업시간</button>
+              <button class="graph-metric-tab" onclick="switchGraphMetric('week','chars')">✏️ 글자수</button>
+            </div>
+            <div class="bar-graph" id="graph-week"></div>
+          </div>
         </div>
         <div id="stats-month" style="display:none">
           <div class="stats-grid">
             <div class="stat-block"><div class="stat-value" id="m-days">—</div><div class="stat-label">출석 일수</div></div>
             <div class="stat-block"><div class="stat-value" id="m-time">—</div><div class="stat-label">작업 시간</div></div>
             <div class="stat-block accent" style="grid-column:1/-1"><div class="stat-value" id="m-chars">—</div><div class="stat-label">총 집필 글자수</div></div>
+          </div>
+          <div class="graph-section">
+            <div class="graph-metric-tabs">
+              <button class="graph-metric-tab active" onclick="switchGraphMetric('month','time')">⏱ 작업시간</button>
+              <button class="graph-metric-tab" onclick="switchGraphMetric('month','chars')">✏️ 글자수</button>
+            </div>
+            <div class="bar-graph" id="graph-month"></div>
           </div>
         </div>
         <div class="card-title" style="margin-top:8px">최근 내역</div>
@@ -1993,11 +2042,80 @@ async function loadStats() {
   document.getElementById('m-time').textContent  = m.mins  ? formatMinutes(m.mins)  : '0분';
   document.getElementById('m-chars').textContent = m.chars.toLocaleString() + ' 자';
 
+  // 그래프용 데이터 캐싱 후 렌더
+  graphDataCache.week  = buildGraphData(weekStart, 7, data);
+  graphDataCache.month = buildGraphData(monthStart, new Date(now.getFullYear(), now.getMonth()+1, 0).getDate(), data);
+  renderBarGraph('week');
+  renderBarGraph('month');
+
   const logList = document.getElementById('log-list');
   if (!data.length) { logList.innerHTML = `<div class="empty" style="padding:10px">기록 없음</div>`; return; }
   logList.innerHTML = data.slice(0,5).map(r => {
     const d = new Date(r.log_date);
     return `<div class="log-item"><span class="log-date">${d.getMonth()+1}/${d.getDate()}</span><div class="log-data"><span>⏱ ${formatMinutes(r.work_minutes)}</span><span>✏️ ${r.char_count.toLocaleString()}자</span></div></div>`;
+  }).join('');
+}
+
+/* ── 막대 그래프 ── */
+let graphMetric = { week: 'time', month: 'time' };
+let graphDataCache = { week: [], month: [] };
+
+// 시작일부터 dayCount일 동안의 날짜별 작업시간/글자수 배열 생성
+function buildGraphData(startDate, dayCount, data) {
+  const byDate = {};
+  data.forEach(r => { byDate[r.log_date] = r; });
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const result = [];
+  for (let i = 0; i < dayCount; i++) {
+    const d = new Date(startDate); d.setDate(startDate.getDate() + i);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (dateStr > todayStr) break; // 미래 날짜는 그래프에 안 그림
+    const r = byDate[dateStr];
+    result.push({
+      date: dateStr,
+      day: d.getDate(),
+      mins: r ? r.work_minutes : 0,
+      chars: r ? r.char_count : 0,
+      isToday: dateStr === todayStr
+    });
+  }
+  return result;
+}
+
+function switchGraphMetric(period, metric) {
+  graphMetric[period] = metric;
+  const container = document.getElementById(period === 'week' ? 'graph-week' : 'graph-month');
+  const tabs = container.previousElementSibling.querySelectorAll('.graph-metric-tab');
+  tabs.forEach((t, i) => t.classList.toggle('active', (metric === 'time' && i === 0) || (metric === 'chars' && i === 1)));
+  renderBarGraph(period);
+}
+
+function renderBarGraph(period) {
+  const container = document.getElementById(period === 'week' ? 'graph-week' : 'graph-month');
+  if (!container) return;
+  const items = graphDataCache[period] || [];
+  const metric = graphMetric[period];
+
+  if (!items.length) {
+    container.innerHTML = `<div class="bar-graph-empty">데이터가 없어요</div>`;
+    return;
+  }
+
+  const values = items.map(it => metric === 'time' ? it.mins : it.chars);
+  const maxVal = Math.max(...values, 1);
+
+  container.innerHTML = items.map((it, i) => {
+    const val = values[i];
+    const heightPct = Math.max((val / maxVal) * 100, val > 0 ? 4 : 0);
+    const tooltip = metric === 'time'
+      ? `${it.day}일: ${formatMinutes(it.mins)}`
+      : `${it.day}일: ${it.chars.toLocaleString()}자`;
+    return `
+      <div class="bar-graph-col">
+        <div class="bar-graph-bar ${it.isToday ? 'is-today' : ''}" style="height:${heightPct}%;" data-tooltip="${escHtml(tooltip)}"></div>
+        <span class="bar-graph-label">${it.day}</span>
+      </div>
+    `;
   }).join('');
 }
 
